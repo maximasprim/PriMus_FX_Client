@@ -1,0 +1,105 @@
+@import "tailwindcss";
+@import "@fontsource/space-grotesk/latin-500.css";
+@import "@fontsource/space-grotesk/latin-600.css";
+@import "@fontsource/space-grotesk/latin-700.css";
+@import "@fontsource/ibm-plex-sans/latin-400.css";
+@import "@fontsource/ibm-plex-sans/latin-500.css";
+@import "@fontsource/ibm-plex-sans/latin-600.css";
+@import "@fontsource/ibm-plex-mono/latin-400.css";
+@import "@fontsource/ibm-plex-mono/latin-500.css";
+@import "@fontsource/ibm-plex-mono/latin-600.css";
+
+/*
+  Design tokens -- "instrument panel," not "SaaS dashboard."
+  Reference: old FX dealing terminals (phosphor green/amber/red status
+  coding on dark glass), not a generic dark-mode admin template.
+
+  Palette (6 named hex values):
+    --ink        #0B0F14  base background -- near-black, not pure black
+    --panel      #121A22  card/panel surface
+    --hairline   #22303C  borders, dividers
+    --paper      #ECF2F7  primary text
+    --dim        #7C8B99  secondary text
+    --signal     #33D6A0  phosphor green -- bullish / confirmed / healthy
+  Plus two status accents that complete the traffic-light logic:
+    --amber      #F2A33D  forming / caution / pending
+    --danger     #FF5C5C  bearish / loss / stopped
+*/
+@theme {
+  --color-ink: #0b0f14;
+  --color-panel: #121a22;
+  --color-panel-raised: #17212b;
+  --color-hairline: #22303c;
+  --color-paper: #ecf2f7;
+  --color-dim: #7c8b99;
+  --color-signal: #33d6a0;
+  --color-amber: #f2a33d;
+  --color-danger: #ff5c5c;
+
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(51, 214, 160, 0.06), transparent),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.012) 0px,
+      rgba(255, 255, 255, 0.012) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+}
+
+::selection {
+  background-color: var(--color-signal);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-hairline) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-hairline);
+  border-radius: 4px;
+}
