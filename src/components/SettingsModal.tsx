@@ -42,7 +42,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                 setUrl(e.target.value);
                 setTestStatus("idle");
               }}
-              placeholder="http://localhost:8000"
+              placeholder="http://127.0.0.1:8000"
               className="w-full rounded-sm border border-hairline bg-ink px-3 py-2 font-mono text-sm text-paper outline-none focus-visible:border-signal"
             />
           </label>

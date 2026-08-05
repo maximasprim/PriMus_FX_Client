@@ -8,8 +8,8 @@ import { api } from "../lib/api";
 const INSTRUMENTS = ["EUR/USD", "GBP/USD", "XAU/USD"];
 
 function InstrumentCard({ instrument }: { instrument: string }) {
-  const { data, error, loading } = useApiData(() => api.markets.get(instrument), [instrument], 15_000);
-  const { data: analysis } = useApiData(() => api.analysis.get(instrument), [instrument], 30_000);
+  const { data, error, loading } = useApiData(() => api.markets.get(instrument), [instrument], 60_000 /**15_000**/);
+  const { data: analysis } = useApiData(() => api.analysis.get(instrument), [instrument], 120_000 /**30_000**/);
 
   const bullish = data?.market_bias.includes("Bullish");
   const bearish = data?.market_bias.includes("Bearish");

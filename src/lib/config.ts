@@ -1,5 +1,5 @@
 const STORAGE_KEY = "forex-ai-analyst:api-base-url";
-const DEFAULT_BASE_URL = "http://localhost:8000";
+const DEFAULT_BASE_URL = "http://127.0.0.1:8000";
 
 export function getApiBaseUrl(): string {
   const stored = localStorage.getItem(STORAGE_KEY);
