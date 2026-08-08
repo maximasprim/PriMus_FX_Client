@@ -5,6 +5,8 @@ import { WatchlistPanel } from "./components/WatchlistPanel";
 import { SignalsPanel } from "./components/SignalsPanel";
 import { AnalysisPanel } from "./components/AnalysisPanel";
 import { PerformancePanel } from "./components/PerformancePanel";
+import { RiskCalculatorPanel } from "./components/RiskCalculatorPanel";
+import { ReportsPanel } from "./components/ReportsPanel";
 import { ControlCenterPanel } from "./components/ControlCenterPanel";
 import { AlertFeed } from "./components/AlertFeed";
 import { useApiData } from "./hooks/useApiData";
@@ -31,6 +33,8 @@ function App() {
             {tab === "analysis" && <AnalysisPanel />}
             {tab === "performance" && <PerformancePanel />}
             {tab === "control" && <ControlCenterPanel />}
+            {tab === "risk" && <RiskCalculatorPanel />}
+            {tab === "reports" && <ReportsPanel />}
           </main>
         </div>
         <div className="hidden lg:block">

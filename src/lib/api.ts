@@ -1,10 +1,15 @@
 import { getApiBaseUrl } from "./config";
 import type {
+  DailyReport,
   MarketSnapshot,
+  OpenPosition,
   PerformanceSummary,
+  PositionCheckResult,
+  RiskCalculation,
   SignalRow,
   TradeSetup,
   TradingControlStatus,
+  WeeklyReport,
 } from "../types/api";
 
 class ApiError extends Error {
@@ -101,6 +106,33 @@ export const api = {
   backtests: {
     run: (payload: { instrument: string; timeframe: string; start: string; end: string }) =>
       request("/api/backtests/run", { method: "POST", body: JSON.stringify(payload) }),
+  },
+
+  riskCalculator: {
+    calculate: (payload: {
+      instrument: string;
+      direction: string;
+      entry: number;
+      stop_loss: number;
+      take_profit: number;
+      capital: number;
+      risk_pct: number;
+    }) =>
+      request<RiskCalculation>("/api/risk-calculator/calculate", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    signalsForCalculator: () => request<SignalRow[]>("/api/risk-calculator/signals-for-calculator"),
+  },
+
+  positions: {
+    check: () => request<PositionCheckResult>("/api/positions/check", { method: "POST" }),
+    listOpen: () => request<OpenPosition[]>("/api/positions/open"),
+  },
+
+  reports: {
+    daily: () => request<{ report: DailyReport }>("/api/notifications/reports/daily", { method: "POST" }),
+    weekly: () => request<{ report: WeeklyReport }>("/api/notifications/reports/weekly", { method: "POST" }),
   },
 };
 

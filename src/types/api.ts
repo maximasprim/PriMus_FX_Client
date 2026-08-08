@@ -109,3 +109,78 @@ export interface WsAlertPayload {
   setup?: TradeSetup;
   event_type?: string;
 }
+
+export interface RiskCalculation {
+  instrument: string;
+  direction: string;
+  entry: number;
+  stop_loss: number;
+  take_profit: number;
+  capital: number;
+  risk_pct: number;
+  position_size_units: number;
+  risk_amount: number;
+  reward_amount: number;
+  risk_reward_ratio: number;
+  risk_pips: number;
+  reward_pips: number;
+}
+
+export interface OpenPosition {
+  id: number;
+  signal_id: string;
+  instrument: string;
+  direction: string;
+  entry: number;
+  stop_loss: number;
+  take_profit: number;
+  position_size: number;
+  confluence_score: number;
+  result: string | null;
+  profit_loss: number | null;
+  r_multiple: number | null;
+}
+
+export interface ClosedTradeSummary {
+  signal_id: string;
+  instrument: string;
+  direction: string;
+  result: string;
+  exit_price: number;
+  profit_loss: number | null;
+  r_multiple: number | null;
+}
+
+export interface PositionCheckResult {
+  checked: number;
+  closed: ClosedTradeSummary[];
+  still_open: number;
+}
+
+export interface DailyReport {
+  date: string;
+  signals_generated: number;
+  a_plus_setups: number;
+  trades_executed: number;
+  winning_trades: number;
+  losing_trades: number;
+  net_result_r: number;
+  best_instrument: string | null;
+  most_effective_strategy: string | null;
+  auto_trading_status: string;
+}
+
+export interface WeeklyReport {
+  week_start: string;
+  week_end: string;
+  total_signals: number;
+  confirmed_setups: number;
+  executed_trades: number;
+  win_rate: number;
+  profit_factor: number | null;
+  average_r: number | null;
+  max_drawdown_pct: number | null;
+  by_instrument: Record<string, { total: number; wins: number; losses: number }>;
+  by_session: Record<string, { total: number; wins: number; losses: number }>;
+  by_strategy: Record<string, { total: number; wins: number; losses: number }>;
+}
