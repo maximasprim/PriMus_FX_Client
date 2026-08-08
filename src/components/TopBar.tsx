@@ -68,7 +68,7 @@ export function TopBar({
             </div>
             <div>
               <h1 className="font-display text-sm font-semibold tracking-tight text-paper">
-                Confluence Analyst
+                PriMus Confluence Analyst
               </h1>
               <p className="font-mono text-[10px] text-dim">EUR/USD · GBP/USD · XAU/USD</p>
             </div>
