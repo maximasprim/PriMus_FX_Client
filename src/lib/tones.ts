@@ -19,3 +19,9 @@ export function toneForStatus(status: string): Tone {
   if (status === "INVALIDATED") return "danger";
   return "dim";
 }
+
+export function toneForConfidence(confidence: string): Tone {
+  if (confidence === "Very High" || confidence === "High") return "signal";
+  if (confidence === "Moderate") return "amber";
+  return "dim";
+}

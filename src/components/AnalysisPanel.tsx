@@ -1,11 +1,31 @@
 import { useState } from "react";
 import { Panel, ErrorState } from "./Panel";
 import { StatusBadge } from "./StatusBadge";
-import { toneForDirection, toneForGrade } from "../lib/tones";
+import { toneForConfidence, toneForDirection, toneForGrade } from "../lib/tones";
 import { useApiData } from "../hooks/useApiData";
 import { api } from "../lib/api";
 
 const INSTRUMENTS = ["EUR/USD", "GBP/USD", "XAU/USD"];
+
+const BREAKDOWN_LABELS: Record<string, string> = {
+  market_structure: "Market Structure",
+  higher_timeframe_alignment: "Higher TF Alignment",
+  liquidity_confirmation: "Liquidity Confirmation",
+  entry_zone_quality: "Entry Zone Quality",
+  momentum: "Momentum",
+  risk_reward: "Risk:Reward",
+  news_and_conditions: "News & Conditions",
+};
+
+const BREAKDOWN_MAX: Record<string, number> = {
+  market_structure: 20,
+  higher_timeframe_alignment: 20,
+  liquidity_confirmation: 15,
+  entry_zone_quality: 15,
+  momentum: 10,
+  risk_reward: 10,
+  news_and_conditions: 10,
+};
 
 export function AnalysisPanel() {
   const [selected, setSelected] = useState(INSTRUMENTS[0]);
@@ -41,6 +61,9 @@ export function AnalysisPanel() {
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge tone={toneForDirection(data.direction)}>{data.direction}</StatusBadge>
             <StatusBadge tone={toneForGrade(data.grade)}>{data.grade} · {data.confluence_score}/100</StatusBadge>
+            <StatusBadge tone={toneForConfidence(data.confidence_level)}>
+              Confidence: {data.confidence_level}
+            </StatusBadge>
             <StatusBadge tone="dim">{data.market_regime}</StatusBadge>
             <StatusBadge tone="dim">HTF: {data.higher_timeframe_bias}</StatusBadge>
             <button onClick={refetch} className="ml-auto font-mono text-[11px] text-dim hover:text-signal">
@@ -51,6 +74,38 @@ export function AnalysisPanel() {
           <div>
             <h4 className="mb-1.5 font-mono text-[10px] tracking-widest text-dim uppercase">Market Summary</h4>
             <p className="text-sm leading-relaxed text-paper">{data.reasoning}</p>
+          </div>
+
+          <div>
+            <h4 className="mb-2 font-mono text-[10px] tracking-widest text-dim uppercase">
+              Confluence Breakdown
+            </h4>
+            <div className="space-y-2">
+              {Object.entries(BREAKDOWN_LABELS).map(([key, label]) => {
+                const points = (data.score_breakdown as unknown as Record<string, number>)[key] ?? 0;
+                const max = BREAKDOWN_MAX[key];
+                const reason = data.score_breakdown.reasons?.[key];
+                return (
+                  <div key={key} className="rounded-sm border border-hairline bg-panel-raised p-2.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-mono text-[11px] text-paper">{label}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="h-1 w-16 overflow-hidden rounded-full bg-hairline">
+                          <div
+                            className="h-full rounded-full bg-signal"
+                            style={{ width: `${max ? (points / max) * 100 : 0}%` }}
+                          />
+                        </div>
+                        <span className="font-mono text-[11px] text-dim">
+                          {points}/{max}
+                        </span>
+                      </div>
+                    </div>
+                    {reason && <p className="mt-1 text-[11px] leading-snug text-paper/70">{reason}</p>}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

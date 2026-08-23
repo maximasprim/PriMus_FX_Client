@@ -3,6 +3,7 @@ import { Settings, ShieldAlert, Zap } from "lucide-react";
 import { SessionClock } from "./SessionClock";
 import { StatusBadge } from "./StatusBadge";
 import { SettingsModal } from "./SettingsModal";
+import { MarketStatusBadge } from "./MarketStatusBadge";
 import { api } from "../lib/api";
 import type { TradingControlStatus } from "../types/api";
 
@@ -79,6 +80,7 @@ export function TopBar({
           </div>
 
           <div className="flex items-center gap-3">
+              <MarketStatusBadge />
             {status && (
               <StatusBadge tone={status.global_mode === "FULL_AUTO" ? "signal" : "dim"}>
                 {status.global_mode.replace("_", " ")}

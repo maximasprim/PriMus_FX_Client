@@ -2,6 +2,8 @@ const TABS = [
   { id: "watchlist", label: "Watchlist" },
   { id: "signals", label: "Signals" },
   { id: "analysis", label: "AI Analysis" },
+  { id: "chat", label: "Assistant" },
+  { id: "account", label: "Account" },
   { id: "performance", label: "Performance" },
   { id: "risk", label: "Risk Calculator" },
   { id: "reports", label: "Reports" },

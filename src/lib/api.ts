@@ -1,6 +1,15 @@
 import { getApiBaseUrl } from "./config";
 import type {
+  AccountStatus,
+  AISettings,
+  ChatMessage,
+  ChatResponse,
   DailyReport,
+  ManualCloseResponse,
+  ManualEnterResponse,
+  ManualModifyResponse,
+  ManualPreviewResponse,
+  MarketHoursStatus,
   MarketSnapshot,
   OpenPosition,
   PerformanceSummary,
@@ -133,6 +142,61 @@ export const api = {
   reports: {
     daily: () => request<{ report: DailyReport }>("/api/notifications/reports/daily", { method: "POST" }),
     weekly: () => request<{ report: WeeklyReport }>("/api/notifications/reports/weekly", { method: "POST" }),
+  },
+
+  execution: {
+    manualEnter: (instrument: string, confirm = false, actor = "dashboard") =>
+      request<ManualEnterResponse>("/api/execution/manual/enter", {
+        method: "POST",
+        body: JSON.stringify({ instrument, confirm, actor }),
+      }),
+    manualClose: (instrument: string, confirm = false, closeFraction = 1.0, actor = "dashboard") =>
+      request<ManualCloseResponse>("/api/execution/manual/close", {
+        method: "POST",
+        body: JSON.stringify({ instrument, confirm, close_fraction: closeFraction, actor }),
+      }),
+    manualModify: (
+      instrument: string,
+      newStopLoss: number | null,
+      newTakeProfit: number | null,
+      actor = "dashboard"
+    ) =>
+      request<ManualModifyResponse>("/api/execution/manual/modify", {
+        method: "POST",
+        body: JSON.stringify({
+          instrument,
+          new_stop_loss: newStopLoss,
+          new_take_profit: newTakeProfit,
+          actor,
+        }),
+      }),
+    manualPreview: (symbol: string) =>
+      request<ManualPreviewResponse>(`/api/execution/manual/preview/${symbol.replace(/\//g, "-")}`),
+  },
+
+  chat: {
+    sendMessage: (messages: ChatMessage[], actor = "dashboard-chat") =>
+      request<ChatResponse>("/api/chat/message", {
+        method: "POST",
+        body: JSON.stringify({ messages, actor }),
+      }),
+  },
+
+  account: {
+    status: () => request<AccountStatus>("/api/account/status"),
+  },
+
+  aiSettings: {
+    get: () => request<AISettings>("/api/ai-settings"),
+    update: (update: { provider?: string; model?: string | null; analysis_enrichment_enabled?: boolean }) =>
+      request<AISettings>("/api/ai-settings", {
+        method: "PUT",
+        body: JSON.stringify(update),
+      }),
+  },
+
+  marketHours: {
+    status: () => request<MarketHoursStatus>("/api/market-hours/status"),
   },
 };
 

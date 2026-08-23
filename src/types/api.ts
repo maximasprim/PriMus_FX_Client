@@ -25,6 +25,7 @@ export interface ScoreBreakdown {
   momentum: number;
   risk_reward: number;
   news_and_conditions: number;
+  reasons: Record<string, string>;
 }
 
 export interface ScenarioAnalysis {
@@ -46,6 +47,7 @@ export interface TradeSetup {
   confluence_score: number;
   score_breakdown: ScoreBreakdown;
   grade: SetupGrade;
+  confidence_level: string;
   market_regime: MarketRegime;
   timeframe: string;
   higher_timeframe_bias: MarketBias;
@@ -170,6 +172,47 @@ export interface DailyReport {
   auto_trading_status: string;
 }
 
+export interface AIProviderOption {
+  id: string;
+  default_model: string;
+  available_models: string[];
+  has_api_key: boolean;
+}
+
+export interface AISettings {
+  provider: string;
+  model: string | null;
+  effective_model: string;
+  analysis_enrichment_enabled: boolean;
+  has_api_key: boolean;
+  available_providers: AIProviderOption[];
+}
+
+export interface MarketHoursStatus {
+  open: boolean;
+  reason: string | null;
+  ny_time: string;
+  holidays: string[];
+}
+
+export interface AccountStatus {
+  adapter: string;
+  connected: boolean;
+  broker_name?: string;
+  account_id?: string | null;
+  currency?: string;
+  balance?: number;
+  equity?: number;
+  margin_used?: number | null;
+  margin_free?: number | null;
+  leverage?: number | null;
+  server?: string | null;
+  error?: string | null;
+  open_positions_count?: number;
+  emergency_stop_active?: boolean;
+  auto_trading_enabled?: boolean;
+}
+
 export interface WeeklyReport {
   week_start: string;
   week_end: string;
@@ -183,4 +226,96 @@ export interface WeeklyReport {
   by_instrument: Record<string, { total: number; wins: number; losses: number }>;
   by_session: Record<string, { total: number; wins: number; losses: number }>;
   by_strategy: Record<string, { total: number; wins: number; losses: number }>;
+}
+
+export interface ExecutionValidationFailure {
+  stage: string;
+  reason: string;
+}
+
+export interface ExecutionResult {
+  signal_id: string;
+  executed: boolean;
+  execution_source: string;
+  broker_order_id: string | null;
+  failure: ExecutionValidationFailure | null;
+  position_size: number | null;
+  executed_at: string;
+}
+
+export interface ManualEnterResponse {
+  setup: TradeSetup;
+  execution: ExecutionResult | null;
+  confirmation_required: boolean;
+  message?: string;
+}
+
+export interface ManualCloseResultItem {
+  signal_id: string;
+  instrument?: string;
+  closed: boolean;
+  partial?: boolean;
+  reason?: string;
+  closed_by?: string;
+  exit_price?: number;
+  result?: string;
+  profit_loss?: number | null;
+  realized_profit_loss?: number | null;
+  r_multiple?: number | null;
+  closed_size?: number;
+  remaining_size?: number;
+}
+
+export interface OpenPositionPreview {
+  signal_id: string;
+  direction: string;
+  entry: number;
+  stop_loss: number;
+  take_profit: number;
+}
+
+export interface ManualCloseResponse {
+  instrument: string;
+  closed: ManualCloseResultItem[];
+  confirmation_required: boolean;
+  open_positions?: OpenPositionPreview[];
+  message?: string;
+}
+
+export interface ManualModifyResultItem {
+  signal_id?: string;
+  instrument?: string;
+  modified: boolean;
+  modified_by?: string;
+  stop_loss?: number;
+  take_profit?: number;
+  reason?: string;
+}
+
+export interface ManualModifyResponse {
+  instrument: string;
+  modified: ManualModifyResultItem[];
+}
+
+export interface ManualPreviewResponse {
+  setup: TradeSetup;
+  tradeable: boolean;
+}
+
+export type ChatRole = "user" | "assistant";
+
+export interface ChatMessage {
+  role: ChatRole;
+  content: string;
+}
+
+export interface ChatToolAction {
+  tool: string;
+  input: Record<string, unknown>;
+  summary: string;
+}
+
+export interface ChatResponse {
+  reply: string;
+  actions: ChatToolAction[];
 }

@@ -4,12 +4,15 @@ import { TabNav, type TabId } from "./components/TabNav";
 import { WatchlistPanel } from "./components/WatchlistPanel";
 import { SignalsPanel } from "./components/SignalsPanel";
 import { AnalysisPanel } from "./components/AnalysisPanel";
+import { ChatPanel } from "./components/ChatPanel";
+import { AccountPanel } from "./components/AccountPanel";
 import { PerformancePanel } from "./components/PerformancePanel";
 import { RiskCalculatorPanel } from "./components/RiskCalculatorPanel";
 import { ReportsPanel } from "./components/ReportsPanel";
 import { ControlCenterPanel } from "./components/ControlCenterPanel";
 import { AlertFeed } from "./components/AlertFeed";
 import { useApiData } from "./hooks/useApiData";
+import { useChat } from "./hooks/useChat";
 import { api } from "./lib/api";
 
 function App() {
@@ -19,19 +22,30 @@ function App() {
     [],
     10_000
   );
+  const chat = useChat();
 
   return (
     <div className="flex h-full flex-col">
       <TopBar status={controlStatus} onStatusChange={refetchControlStatus} />
 
       <div className="flex min-h-0 flex-1">
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 min-h-0 flex-1 flex-col">
           <TabNav active={tab} onChange={setTab} />
           <main className="mx-auto w-full max-w-[1400px] flex-1 overflow-y-auto p-6">
             {tab === "watchlist" && <WatchlistPanel />}
             {tab === "signals" && <SignalsPanel />}
             {tab === "analysis" && <AnalysisPanel />}
+            {tab === "chat" && (
+              <ChatPanel
+                entries={chat.entries}
+                sending={chat.sending}
+                error={chat.error}
+                onSend={chat.sendMessage}
+                onReset={chat.reset}
+              />
+            )}
             {tab === "performance" && <PerformancePanel />}
+            {tab === "account" && <AccountPanel />}
             {tab === "control" && <ControlCenterPanel />}
             {tab === "risk" && <RiskCalculatorPanel />}
             {tab === "reports" && <ReportsPanel />}
