@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from "./config";
+import { getApiBaseUrl, getApiKey } from "./config";
 import type {
   AccountStatus,
   AISettings,
@@ -15,6 +15,11 @@ import type {
   PerformanceSummary,
   PositionCheckResult,
   RiskCalculation,
+  BacktestJob,
+  BacktestListItem,
+  ScalperConfigResponse,
+  ScalperDiagnostics,
+  ScalperStatus,
   SignalRow,
   TradeSetup,
   TradingControlStatus,
@@ -35,10 +40,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     res = await fetch(url, {
       ...init,
-      headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+      headers: { "Content-Type": "application/json", "X-API-Key": getApiKey(), ...(init?.headers ?? {}) },
     });
   } catch {
     throw new ApiError(0, `Could not reach the backend at ${getApiBaseUrl()}. Check the API URL in Settings.`);
+  }
+  if (res.status === 401) {
+    throw new ApiError(401, "The backend rejected the API key. Open Settings and enter the API key (API_SECRET_KEY from Server/.env).");
   }
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -198,6 +206,44 @@ export const api = {
   marketHours: {
     status: () => request<MarketHoursStatus>("/api/market-hours/status"),
   },
+
+  scalper: {
+    status: () => request<ScalperStatus>("/api/scalper/status"),
+    config: () => request<ScalperConfigResponse>("/api/scalper/config"),
+    updateConfig: (changes: Record<string, unknown>, acknowledgeLiveRisk = false) =>
+      request<{ config: ScalperConfigResponse["config"]; applied_live: boolean }>(
+        `/api/scalper/config${acknowledgeLiveRisk ? "?acknowledge_live_risk=true" : ""}`,
+        { method: "PUT", body: JSON.stringify(changes) }
+      ),
+    resetConfig: () => request<{ config: ScalperConfigResponse["config"] }>("/api/scalper/config/reset", { method: "POST" }),
+    start: () => request<ScalperStatus>("/api/scalper/start", { method: "POST" }),
+    stop: (closePositions = false) =>
+      request<ScalperStatus>("/api/scalper/stop", { method: "POST", body: JSON.stringify({ close_positions: closePositions }) }),
+    flatten: () => request<ScalperStatus & { closed: number }>("/api/scalper/flatten", { method: "POST" }),
+    diagnostics: () => request<ScalperDiagnostics>("/api/scalper/diagnostics"),
+    backtest: {
+      start: (body: Record<string, unknown>) =>
+        request<{ job_id: string }>("/api/scalper/backtest", { method: "POST", body: JSON.stringify(body) }),
+      status: (id: string) => request<BacktestJob>(`/api/scalper/backtest/${id}`),
+      list: () => request<BacktestListItem[]>("/api/scalper/backtest"),
+      cancel: (id: string) => request<BacktestJob>(`/api/scalper/backtest/${id}/cancel`, { method: "POST" }),
+    },
+  },
 };
+
+/** Turns an ApiError body like {"detail":[{"field","message"}]} or {"detail":"..."} into readable text. */
+export function describeApiError(err: unknown): string {
+  if (!(err instanceof Error)) return "Something went wrong.";
+  try {
+    const detail = JSON.parse(err.message)?.detail;
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail)) {
+      return detail.map((d: { field?: string; message?: string }) => `${d.field ? d.field.replace(/_/g, " ") + ": " : ""}${d.message ?? ""}`).join(" · ");
+    }
+  } catch {
+    /* not JSON */
+  }
+  return err.message;
+}
 
 export { ApiError };

@@ -27,7 +27,7 @@ function InstrumentCard({ instrument }: { instrument: string }) {
   const [actionMessage, setActionMessage] = useState<{ tone: Tone; text: string } | null>(null);
 
   // Two-step confirm: clicking Enter/Close the first time only opens this
-  // inline confirmation — nothing is sent to the broker until the user
+  // inline confirmation - nothing is sent to the broker until the user
   // explicitly confirms, same pattern as the chat assistant.
   const [pendingAction, setPendingAction] = useState<"enter" | "close" | null>(null);
   const [closeFraction, setCloseFraction] = useState(1.0);
@@ -48,12 +48,12 @@ function InstrumentCard({ instrument }: { instrument: string }) {
       if (res.execution?.executed) {
         setActionMessage({
           tone: "signal",
-          text: `Entered ${res.setup.direction} — order ${res.execution.broker_order_id ?? ""}`,
+          text: `Entered ${res.setup.direction} - order ${res.execution.broker_order_id ?? ""}`,
         });
       } else {
         setActionMessage({
           tone: "dim",
-          text: res.execution?.failure?.reason ?? "Could not enter — no confirmed setup.",
+          text: res.execution?.failure?.reason ?? "Could not enter - no confirmed setup.",
         });
       }
       refetchAnalysis();

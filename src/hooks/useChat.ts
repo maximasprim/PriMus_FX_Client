@@ -22,7 +22,7 @@ function loadStoredEntries(): ChatEntry[] {
 
 /**
  * Owns the chat conversation (kept in App.tsx so it survives switching tabs)
- * and talks to POST /api/chat/message. The backend is stateless — we resend
+ * and talks to POST /api/chat/message. The backend is stateless - we resend
  * the full message history on every turn (see lib/api.ts + Server's
  * app/services/chat_agent_service.py). History is additionally persisted to
  * localStorage so it survives a page refresh.
@@ -36,7 +36,7 @@ export function useChat() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
     } catch {
-      // Storage full/unavailable — conversation still works for this session.
+      // Storage full/unavailable - conversation still works for this session.
     }
   }, [entries]);
 

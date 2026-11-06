@@ -148,7 +148,7 @@ export function AnalysisPanel() {
               </div>
               <div>
                 <div className="text-dim">R:R</div>
-                <div className="text-paper">{data.risk_reward ? `1:${data.risk_reward}` : "—"}</div>
+                <div className="text-paper">{data.risk_reward ? `1:${data.risk_reward}` : "-"}</div>
               </div>
             </div>
           )}

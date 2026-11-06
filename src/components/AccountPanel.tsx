@@ -5,7 +5,7 @@ import { useApiData } from "../hooks/useApiData";
 import { api } from "../lib/api";
 
 function formatMoney(value: number | null | undefined, currency?: string) {
-  if (value === null || value === undefined) return "—";
+  if (value === null || value === undefined) return "-";
   const symbol = currency === "USD" || !currency ? "$" : `${currency} `;
   return `${symbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -59,7 +59,7 @@ export function AccountPanel() {
                 <h4 className="mb-1.5 font-mono text-[10px] tracking-widest text-dim uppercase">
                   Broker
                 </h4>
-                <p className="text-sm text-paper">{data.broker_name ?? "—"}</p>
+                <p className="text-sm text-paper">{data.broker_name ?? "-"}</p>
                 {data.server && <p className="font-mono text-xs text-dim">server: {data.server}</p>}
                 {data.account_id && <p className="font-mono text-xs text-dim">account: {data.account_id}</p>}
               </div>
@@ -67,7 +67,7 @@ export function AccountPanel() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <Stat label="Balance" value={formatMoney(data.balance, data.currency)} />
                 <Stat label="Equity" value={formatMoney(data.equity, data.currency)} />
-                <Stat label="Currency" value={data.currency ?? "—"} />
+                <Stat label="Currency" value={data.currency ?? "-"} />
                 <Stat
                   label="Margin Used"
                   value={data.margin_used !== null && data.margin_used !== undefined ? formatMoney(data.margin_used, data.currency) : "N/A"}
@@ -84,8 +84,8 @@ export function AccountPanel() {
 
           <p className="font-mono text-[10px] text-dim">
             {data.adapter === "paper"
-              ? "Running on the paper (simulated) adapter — no real capital is at risk. Balance/equity are simulated."
-              : "Live broker connection — figures reflect your real account."}
+              ? "Running on the paper (simulated) adapter - no real capital is at risk. Balance/equity are simulated."
+              : "Live broker connection - figures reflect your real account."}
           </p>
         </div>
       )}

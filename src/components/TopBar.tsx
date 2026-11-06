@@ -90,7 +90,7 @@ export function TopBar({
             <button
               disabled={busy || autoTradingOn}
               onClick={handleToggleAutoTrading}
-              title={autoTradingOn ? "Auto-trading is on — switch global mode to turn it off" : undefined}
+              title={autoTradingOn ? "Auto-trading is on - switch global mode to turn it off" : undefined}
               className={`rounded-sm border px-3 py-1.5 font-mono text-xs font-medium transition-colors disabled:cursor-not-allowed ${
                 autoTradingOn
                   ? "border-signal/40 bg-signal/12 text-signal"
@@ -112,7 +112,7 @@ export function TopBar({
               }`}
             >
               <ShieldAlert size={13} />
-              {emergencyStop ? "STOPPED — RESUME" : "STOP NEW TRADES"}
+              {emergencyStop ? "STOPPED - RESUME" : "STOP NEW TRADES"}
             </button>
 
             <button

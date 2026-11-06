@@ -10,6 +10,7 @@ import { PerformancePanel } from "./components/PerformancePanel";
 import { RiskCalculatorPanel } from "./components/RiskCalculatorPanel";
 import { ReportsPanel } from "./components/ReportsPanel";
 import { ControlCenterPanel } from "./components/ControlCenterPanel";
+import { ScalperPanel } from "./components/ScalperPanel";
 import { AlertFeed } from "./components/AlertFeed";
 import { useApiData } from "./hooks/useApiData";
 import { useChat } from "./hooks/useChat";
@@ -47,6 +48,7 @@ function App() {
             {tab === "performance" && <PerformancePanel />}
             {tab === "account" && <AccountPanel />}
             {tab === "control" && <ControlCenterPanel />}
+            {tab === "scalper" && <ScalperPanel />}
             {tab === "risk" && <RiskCalculatorPanel />}
             {tab === "reports" && <ReportsPanel />}
           </main>

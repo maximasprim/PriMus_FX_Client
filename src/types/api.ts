@@ -319,3 +319,192 @@ export interface ChatResponse {
   reply: string;
   actions: ChatToolAction[];
 }
+// ---------------------------------------------------------------- Scalper
+export interface ScalperConfig {
+  backend: "mt5" | "simulation";
+  allow_live_account: boolean;
+  instruments: string[];
+  loop_interval_ms: number;
+  max_concurrent_positions: number;
+  max_positions_per_instrument: number;
+  entries_per_signal: number;
+  cooldown_seconds: number;
+  max_trades_per_hour: number;
+  min_signal_score: number;
+  max_spread_pips: number;
+  min_tp_to_spread_ratio: number;
+  lot_mode: "fixed" | "risk_pct";
+  fixed_lot: number;
+  risk_per_trade_pct: number;
+  max_lot_per_trade: number;
+  max_total_risk_pct: number;
+  exit_mode: "atr" | "fixed";
+  tp_atr_mult: number;
+  sl_atr_mult: number;
+  take_profit_pips: number;
+  stop_loss_pips: number;
+  stagger_targets: boolean;
+  trade_profit_target_money: number;
+  breakeven_after_pips: number;
+  trailing_enabled: boolean;
+  trailing_start_pips: number;
+  trailing_distance_pips: number;
+  trailing_step_pips: number;
+  max_hold_seconds: number;
+  basket_take_profit_money: number;
+  session_profit_target_money: number;
+  session_max_loss_money: number;
+  session_max_loss_pct: number;
+  max_consecutive_losses: number;
+  flatten_on_halt: boolean;
+}
+
+export interface ScalperConfigResponse {
+  config: ScalperConfig;
+  allowed_instruments: string[];
+  running: boolean;
+}
+
+export interface ScalperPosition {
+  ticket: string;
+  instrument: string;
+  side: "BUY" | "SELL";
+  volume: number;
+  price_open: number;
+  sl: number;
+  tp: number;
+  profit: number;
+  age_seconds: number;
+}
+
+export interface ScalperSignalInfo {
+  side?: "BUY" | "SELL" | null;
+  score?: number;
+  spread_pips?: number;
+  atr_pips?: number;
+  reasons?: string[];
+  blocked?: string | null;
+}
+
+export interface ScalperEvent {
+  ts: number;
+  kind: string;
+  level: string;
+  message: string;
+}
+
+export interface ScalperStatus {
+  state: "STOPPED" | "RUNNING" | "HALTED";
+  halt_reason: string | null;
+  last_error: string | null;
+  started_at: number | null;
+  account: {
+    backend: string;
+    login: string | null;
+    server: string | null;
+    currency: string;
+    balance: number;
+    equity: number;
+    is_demo: boolean;
+    hedging: boolean;
+    algo_trading_enabled: boolean;
+  } | null;
+  session: {
+    start_equity: number | null;
+    realized: number;
+    floating: number;
+    net: number;
+    trades_opened: number;
+    closed_trades: number;
+    wins: number;
+    losses: number;
+    consecutive_losses: number;
+    trades_last_hour: number;
+  };
+  positions: ScalperPosition[];
+  signals: Record<string, ScalperSignalInfo>;
+  events: ScalperEvent[];
+}
+
+export interface ScalperDiagnostics {
+  ready: boolean;
+  backend: string;
+  checks: { name: string; ok: boolean; detail: string; severity: "ok" | "warning" | "error" }[];
+}
+
+// ---------------------------------------------------------------- Scalper backtest
+export interface BtStats {
+  n: number;
+  net: number;
+  win_rate: number | null;
+  expectancy: number | null;
+  profit_factor: number | null;
+  avg_win: number | null;
+  avg_loss: number | null;
+  ci95: [number, number] | null;
+  se: number | null;
+}
+
+export interface BtGroup {
+  n: number;
+  net: number;
+  win_rate: number;
+  expectancy: number;
+}
+
+export interface BtSummary extends BtStats {
+  variant: string;
+  start: string;
+  end: string;
+  bars: number;
+  instruments: string[];
+  start_balance: number;
+  gross_before_costs: number;
+  costs: number;
+  costs_pct_of_gross: number | null;
+  net_pct: number;
+  max_drawdown: number;
+  max_drawdown_pct: number;
+  longest_losing_streak: number;
+  avg_hold_seconds: number | null;
+  trades_per_day: number;
+  profitable_days_pct: number | null;
+  best_trade: number | null;
+  worst_trade: number | null;
+  by_exit_reason: Record<string, BtGroup>;
+  by_instrument: Record<string, BtGroup>;
+  by_score_band: Record<string, BtGroup>;
+  in_sample: BtStats;
+  out_of_sample: BtStats;
+  days_halted: number;
+  equity: [number, number][];
+  errors: string[];
+}
+
+export interface BacktestResult {
+  summaries: Record<string, BtSummary>;
+  verdict: { overall: "promising" | "inconclusive" | "not_viable"; points: { level: "good" | "warn" | "bad" | "info"; text: string }[] };
+  notes: string[];
+}
+
+export interface BacktestJob {
+  job_id: string;
+  state: "running" | "done" | "failed" | "cancelled" | "interrupted";
+  created: number | null;
+  request: Record<string, unknown> | null;
+  variants: Record<string, { state: string; progress: number; error?: string }>;
+  progress: number;
+  result: BacktestResult | null;
+  error: string | null;
+}
+
+export interface BacktestListItem {
+  job_id: string;
+  state: string;
+  created: number | null;
+  source: string | null;
+  days: number | null;
+  overall: string | null;
+  net: number | null;
+  trades: number | null;
+}

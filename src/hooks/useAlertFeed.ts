@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { getWsBaseUrl } from "../lib/config";
+import { getApiKey, getWsBaseUrl } from "../lib/config";
 import type { WsAlertPayload } from "../types/api";
 
 export type ConnectionStatus = "connecting" | "open" | "closed";
@@ -16,7 +16,7 @@ export function useAlertFeed(maxItems = 50) {
     const connect = () => {
       if (cancelled) return;
       setStatus("connecting");
-      ws = new WebSocket(`${getWsBaseUrl()}/ws/alerts`);
+      ws = new WebSocket(`${getWsBaseUrl()}/ws/alerts?token=${encodeURIComponent(getApiKey())}`);
 
       ws.onopen = () => setStatus("open");
       ws.onclose = () => {

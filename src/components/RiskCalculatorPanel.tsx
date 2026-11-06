@@ -88,7 +88,7 @@ export function RiskCalculatorPanel() {
     <Panel eyebrow="Capital planning" title="Risk Calculator">
       <p className="mb-4 text-xs text-dim">
         This tells you what a trade <em>costs if it hits stop</em> and <em>pays if it hits target</em>, based on
-        your capital and risk tolerance. It does not predict which one will happen — no tool honestly can.
+        your capital and risk tolerance. It does not predict which one will happen - no tool honestly can.
       </p>
 
       {recentSignals && recentSignals.length > 0 && (
@@ -101,7 +101,7 @@ export function RiskCalculatorPanel() {
             defaultValue=""
             className="w-full rounded-sm border border-hairline bg-ink px-3 py-2 font-mono text-sm text-paper outline-none focus-visible:border-signal"
           >
-            <option value="">— select a setup —</option>
+            <option value="">- select a setup -</option>
             {recentSignals.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.instrument} {s.direction} · score {s.confluence_score} · {s.grade}
@@ -193,7 +193,7 @@ export function RiskCalculatorPanel() {
           </div>
 
           <p className="mt-4 font-mono text-[10px] text-dim">
-            These are the two possible outcomes if price reaches your stop or target — not a prediction of
+            These are the two possible outcomes if price reaches your stop or target - not a prediction of
             which one occurs. Position size assumes no leverage/lot-size constraints from your specific broker;
             confirm against your broker's minimum lot size before placing a real order.
           </p>

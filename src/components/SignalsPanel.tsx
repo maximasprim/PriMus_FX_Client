@@ -52,7 +52,7 @@ export function SignalsPanel() {
                   <td className="py-2.5 pr-4">
                     <StatusBadge tone={toneForStatus(signal.status)}>{signal.status.replace(/_/g, " ")}</StatusBadge>
                   </td>
-                  <td className="py-2.5 pr-4 font-mono text-xs text-dim">{signal.result ?? "—"}</td>
+                  <td className="py-2.5 pr-4 font-mono text-xs text-dim">{signal.result ?? "-"}</td>
                   <td className="py-2.5 font-mono text-xs text-dim">{timeAgo(signal.timestamp)}</td>
                 </tr>
               ))}

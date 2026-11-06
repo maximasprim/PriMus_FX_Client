@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { getApiBaseUrl, setApiBaseUrl } from "../lib/config";
+import { getApiBaseUrl, getApiKey, setApiBaseUrl, setApiKey } from "../lib/config";
 import { api, ApiError } from "../lib/api";
 import type { AISettings } from "../types/api";
 
@@ -86,7 +86,7 @@ function AIProviderSection() {
 
       {!settings.has_api_key && (
         <p className="text-xs text-danger">
-          No API key set for {settings.provider} — add it to the server's .env to actually use this provider.
+          No API key set for {settings.provider} - add it to the server's .env to actually use this provider.
         </p>
       )}
 
@@ -114,7 +114,7 @@ function AIProviderSection() {
           AI-enrich analysis reasoning
           <span className="block text-[10px] text-dim">
             Uses the model above to write the scenario narrative on the AI Analysis page. The confluence score
-            itself never changes — it's always the deterministic rule-based score. Off by default; turning this
+            itself never changes - it's always the deterministic rule-based score. Off by default; turning this
             on calls the model on every analysis refresh (cached ~3 min per instrument).
           </span>
         </span>
@@ -132,13 +132,16 @@ function AIProviderSection() {
 
 export function SettingsModal({ onClose }: { onClose: () => void }) {
   const [url, setUrl] = useState(getApiBaseUrl());
+  const [apiKey, setKey] = useState(getApiKey());
   const [testStatus, setTestStatus] = useState<"idle" | "testing" | "ok" | "fail">("idle");
 
   const handleTest = async () => {
     setApiBaseUrl(url);
+    setApiKey(apiKey);
     setTestStatus("testing");
     try {
       await api.health();
+      await api.scalper.status(); // protected route: proves the API key is accepted
       setTestStatus("ok");
     } catch {
       setTestStatus("fail");
@@ -147,6 +150,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
 
   const handleSave = () => {
     setApiBaseUrl(url);
+    setApiKey(apiKey);
     onClose();
     window.location.reload();
   };
@@ -179,8 +183,22 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                 className="w-full rounded-sm border border-hairline bg-ink px-3 py-2 font-mono text-sm text-paper outline-none focus-visible:border-signal"
               />
             </label>
+            <label className="block">
+              <span className="mb-1 block font-mono text-[10px] tracking-widest text-dim uppercase">API key</span>
+              <input
+                type="password"
+                autoComplete="off"
+                value={apiKey}
+                onChange={(e) => {
+                  setKey(e.target.value);
+                  setTestStatus("idle");
+                }}
+                placeholder="API_SECRET_KEY from Server/.env"
+                className="w-full rounded-sm border border-hairline bg-ink px-3 py-2 font-mono text-sm text-paper outline-none focus-visible:border-signal"
+              />
+            </label>
             <p className="text-xs text-dim">
-              Point this at wherever your FastAPI backend is deployed. Stored locally in your browser — nothing
+              Point this at wherever your FastAPI backend is deployed. Stored locally in your browser - nothing
               is sent anywhere else.
             </p>
             <div className="flex items-center gap-2">
@@ -192,7 +210,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
               </button>
               {testStatus === "testing" && <span className="font-mono text-xs text-dim">Checking…</span>}
               {testStatus === "ok" && <span className="font-mono text-xs text-signal">Connected</span>}
-              {testStatus === "fail" && <span className="font-mono text-xs text-danger">Could not reach backend</span>}
+              {testStatus === "fail" && <span className="font-mono text-xs text-danger">Could not connect (check URL and API key)</span>}
             </div>
           </div>
 

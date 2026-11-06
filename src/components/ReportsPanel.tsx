@@ -73,7 +73,7 @@ export function ReportsPanel() {
               <Stat label="Net Result" value={`${daily.net_result_r >= 0 ? "+" : ""}${daily.net_result_r.toFixed(2)}R`} />
             </div>
             <div className="grid grid-cols-2 gap-3 font-mono text-xs text-dim">
-              <span>Best instrument: {daily.best_instrument ?? "—"}</span>
+              <span>Best instrument: {daily.best_instrument ?? "-"}</span>
               <span>Auto-trading: {daily.auto_trading_status}</span>
             </div>
           </div>
@@ -105,7 +105,7 @@ export function ReportsPanel() {
               <Stat label="Total Signals" value={String(weekly.total_signals)} />
               <Stat label="Confirmed" value={String(weekly.confirmed_setups)} />
               <Stat label="Win Rate" value={`${weekly.win_rate}%`} />
-              <Stat label="Profit Factor" value={weekly.profit_factor?.toFixed(2) ?? "—"} />
+              <Stat label="Profit Factor" value={weekly.profit_factor?.toFixed(2) ?? "-"} />
             </div>
             {Object.keys(weekly.by_instrument).length > 0 && (
               <div>

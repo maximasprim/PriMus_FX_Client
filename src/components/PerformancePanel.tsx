@@ -115,7 +115,7 @@ export function PerformancePanel() {
               />
               <Stat
                 label="Profit Factor"
-                value={data.profit_factor ? data.profit_factor.toFixed(2) : "—"}
+                value={data.profit_factor ? data.profit_factor.toFixed(2) : "-"}
                 tone={data.profit_factor && data.profit_factor >= 1 ? "text-signal" : "text-danger"}
               />
             </div>
@@ -194,7 +194,7 @@ export function PerformancePanel() {
 //             />
 //             <Stat
 //               label="Profit Factor"
-//               value={data.profit_factor ? data.profit_factor.toFixed(2) : "—"}
+//               value={data.profit_factor ? data.profit_factor.toFixed(2) : "-"}
 //               tone={data.profit_factor && data.profit_factor >= 1 ? "text-signal" : "text-danger"}
 //             />
 //           </div>
