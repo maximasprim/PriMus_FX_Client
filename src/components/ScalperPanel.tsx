@@ -261,14 +261,14 @@ function ScalperLive() {
                 <span className={c.severity === "ok" ? "text-signal" : c.severity === "warning" ? "text-amber" : "text-danger"}>
                   {c.severity === "ok" ? "✓" : c.severity === "warning" ? "!" : "✕"}
                 </span>
-                <span><span className="text-paper">{c.name}</span> <span className="text-dim">- {c.detail}</span></span>
+                <span><span className="text-paper">{c.name}</span> <span className="text-dim">— {c.detail}</span></span>
               </li>
             ))}
           </ul>
         )}
         <p className="mt-3 border-t border-hairline pt-3 text-[11px] leading-snug text-dim">
           <b className="text-paper">Desktop vs mobile MT5:</b> the bot runs against the MT5 <b>desktop</b> terminal (Windows) on the machine
-          where this backend runs - mobile MT5 has no automation interface. Trades the bot opens on your account still show up in the MT5 mobile
+          where this backend runs — mobile MT5 has no automation interface. Trades the bot opens on your account still show up in the MT5 mobile
           app, and you can close them there by hand. You can also watch and control the bot from this dashboard on your phone.
         </p>
       </Panel>
@@ -298,12 +298,12 @@ function ScalperLive() {
       <Group
         accent
         title="Stop the bot when…"
-        note="These switch the whole bot off (and by default close everything). A loss limit is required - the bot won't run without one."
+        note="These switch the whole bot off (and by default close everything). A loss limit is required — the bot won't run without one."
       >
         <NumberField label={`Max session loss (${cur || "money"})`} value={draft.session_max_loss_money} min={0} step={1} onChange={(v) => set("session_max_loss_money", v)} hint="Stop when realised + open P&L falls to minus this. 0 = use % only." />
         <NumberField label="Max session loss (% of starting equity)" value={draft.session_max_loss_pct} min={0} max={50} step={0.1} onChange={(v) => set("session_max_loss_pct", v)} hint="Whichever of the two loss limits is hit first stops the bot." />
         <NumberField label={`Total profit target (${cur || "money"})`} value={draft.session_profit_target_money} min={0} step={1} onChange={(v) => set("session_profit_target_money", v)} hint="Stop the bot once the session is up this much. 0 = off." />
-        <NumberField label={`Basket take-profit (${cur || "money"})`} value={draft.basket_take_profit_money} min={0} step={1} onChange={(v) => set("basket_take_profit_money", v)} hint="Close ALL open trades when their combined profit reaches this - the bot keeps running. 0 = off." />
+        <NumberField label={`Basket take-profit (${cur || "money"})`} value={draft.basket_take_profit_money} min={0} step={1} onChange={(v) => set("basket_take_profit_money", v)} hint="Close ALL open trades when their combined profit reaches this — the bot keeps running. 0 = off." />
         <NumberField label="Stop after N losses in a row" value={draft.max_consecutive_losses} min={0} max={50} onChange={(v) => set("max_consecutive_losses", v)} hint="0 = off." />
         <Toggle label="Close all trades when a rule stops the bot" checked={draft.flatten_on_halt} onChange={(v) => set("flatten_on_halt", v)} hint="Off = trades stay open with their own stop-loss / take-profit." />
       </Group>
@@ -317,6 +317,27 @@ function ScalperLive() {
       </Group>
 
       <Group title="How picky" note="Looser = more trades, but more of them are noise. Lowering the score without testing is the fastest way to lose money.">
+        <div className="sm:col-span-2">
+          <SelectField
+            label="Entry style"
+            value={draft.entry_style}
+            onChange={(v) => set("entry_style", v)}
+            options={Object.entries(cfgResp.entry_styles).map(([id, info]) => ({ id: id as ScalperConfig["entry_style"], label: info.label }))}
+            hint={cfgResp.entry_styles[draft.entry_style]?.hint}
+          />
+          {cfgResp.entry_styles[draft.entry_style] && draft.min_signal_score !== cfgResp.entry_styles[draft.entry_style].suggested_min_score && (
+            <button
+              type="button"
+              onClick={() => set("min_signal_score", cfgResp.entry_styles[draft.entry_style].suggested_min_score)}
+              className="mt-1.5 font-mono text-[10px] text-signal underline underline-offset-2"
+            >
+              Use this style's suggested minimum score ({cfgResp.entry_styles[draft.entry_style].suggested_min_score})
+            </button>
+          )}
+          <p className="mt-1 text-[10px] leading-snug text-dim">
+            Scores can't be compared between styles. Test each style in the <b className="text-paper">Backtest</b> tab (the backtest uses these saved settings) before trusting it.
+          </p>
+        </div>
         <NumberField label="Minimum signal score (0–100)" value={draft.min_signal_score} min={20} max={95} onChange={(v) => set("min_signal_score", v)} hint="Lower = looser. The built-in signal is a simple heuristic, not a proven edge." />
         <NumberField label="Max spread (pips)" value={draft.max_spread_pips} min={0.1} max={50} step={0.1} onChange={(v) => set("max_spread_pips", v)} hint="Skip when the broker spread is wider (e.g. during news). Gold: 1 pip = 0.10." />
         <NumberField label="Target must be ≥ N × spread" value={draft.min_tp_to_spread_ratio} min={1} max={10} step={0.5} onChange={(v) => set("min_tp_to_spread_ratio", v)} hint="Skips trades where the spread would eat the profit." />
@@ -326,13 +347,13 @@ function ScalperLive() {
         <SelectField label="Sizing mode" value={draft.lot_mode} onChange={(v) => set("lot_mode", v)} options={[{ id: "fixed", label: "Fixed lot" }, { id: "risk_pct", label: "% of equity at risk" }]} />
         {draft.lot_mode === "fixed"
           ? <NumberField label="Lot size" value={draft.fixed_lot} min={0.01} max={5} step={0.01} onChange={(v) => set("fixed_lot", v)} />
-          : <NumberField label="Risk per trade (% of equity)" value={draft.risk_per_trade_pct} min={0.05} max={2} step={0.05} onChange={(v) => set("risk_per_trade_pct", v)} hint="If this works out below the broker's minimum lot, the trade is skipped - never rounded up." />}
+          : <NumberField label="Risk per trade (% of equity)" value={draft.risk_per_trade_pct} min={0.05} max={2} step={0.05} onChange={(v) => set("risk_per_trade_pct", v)} hint="If this works out below the broker's minimum lot, the trade is skipped — never rounded up." />}
         <NumberField label="Max lot per trade" value={draft.max_lot_per_trade} min={0.01} max={10} step={0.01} onChange={(v) => set("max_lot_per_trade", v)} />
         <NumberField label="Max total open risk (% of equity)" value={draft.max_total_risk_pct} min={0.1} max={10} step={0.1} onChange={(v) => set("max_total_risk_pct", v)} hint="Sum of every open trade's stop-loss risk. New trades are blocked above this." />
       </Group>
 
       <Group title="Exits">
-        <SelectField label="Stop-loss / take-profit based on" value={draft.exit_mode} onChange={(v) => set("exit_mode", v)} options={[{ id: "atr", label: "Market volatility (ATR) - adapts to each pair" }, { id: "fixed", label: "Fixed pips" }]} />
+        <SelectField label="Stop-loss / take-profit based on" value={draft.exit_mode} onChange={(v) => set("exit_mode", v)} options={[{ id: "atr", label: "Market volatility (ATR) — adapts to each pair" }, { id: "fixed", label: "Fixed pips" }]} />
         {draft.exit_mode === "atr" ? (
           <>
             <NumberField label="Take-profit (× ATR)" value={draft.tp_atr_mult} min={0.2} max={5} step={0.1} onChange={(v) => set("tp_atr_mult", v)} />
@@ -406,7 +427,7 @@ function ScalperLive() {
                   <tr key={p.ticket} className="border-t border-hairline/60">
                     <td className="py-2 text-paper">{p.instrument}</td>
                     <td className={p.side === "BUY" ? "text-signal" : "text-danger"}>{p.side}</td>
-                    <td>{p.volume}</td><td>{p.price_open}</td><td>{p.sl || "-"}</td><td>{p.tp || "-"}</td>
+                    <td>{p.volume}</td><td>{p.price_open}</td><td>{p.sl || "—"}</td><td>{p.tp || "—"}</td>
                     <td>{p.age_seconds}s</td>
                     <td className={`text-right ${tone(p.profit)}`}>{money(p.profit)}</td>
                   </tr>

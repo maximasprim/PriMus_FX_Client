@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Play, RefreshCw, Square } from "lucide-react";
 import { Panel } from "./Panel";
 import { api, describeApiError } from "../lib/api";
-import type { BacktestJob, BacktestListItem, BtGroup, BtSummary } from "../types/api";
+import type { BacktestJob, BacktestListItem, BtGroup, BtSummary, EntryStyleInfo, HoldoutState, HoldoutSummary } from "../types/api";
 
 const VARIANT_LABEL: Record<string, string> = {
   strategy: "Your settings",
@@ -91,7 +91,49 @@ function GroupTable({ title, rows, order }: { title: string; rows: Record<string
 }
 
 // ---------------------------------------------------------------- results
-function Results({ job }: { job: BacktestJob }) {
+function SummaryCells({ s }: { s: HoldoutSummary }) {
+  return (
+    <div className="grid grid-cols-2 gap-2 font-mono text-xs sm:grid-cols-4">
+      {([["Trades", s.n === null ? "—" : String(s.n)], ["Net", s.net_pct === null ? "—" : `${signed(s.net_pct)}%`],
+         ["Avg / trade", signed(s.expectancy, 3)], ["Win %", fmt(s.win_rate, 1)]] as const).map(([k, v]) => (
+        <div key={k} className="rounded-sm border border-hairline bg-ink/40 px-2 py-1.5"><div className="text-[10px] text-dim">{k}</div><div className="text-paper">{v}</div></div>
+      ))}
+    </div>
+  );
+}
+
+function HoldoutBanner({ job }: { job: BacktestJob }) {
+  const h = job.result?.holdout;
+  const st = job.result?.summaries.strategy;
+  if (!h || !st) return null;
+  const confirm = h.mode === "confirm";
+  return (
+    <div className={`rounded-md border p-4 ${confirm ? "border-signal/40 bg-signal/5" : "border-hairline bg-panel"}`}>
+      <div className="font-mono text-[10px] tracking-widest text-dim uppercase">
+        {confirm ? "Confirmation run — the locked period, used once" : `Explore run — data before ${h.split_iso} only`}
+      </div>
+      {confirm ? (
+        <>
+          <p className="mt-2 text-xs leading-relaxed text-paper">
+            This period (from {h.split_iso}) stayed hidden while you explored settings, so this is the number to believe. Compare it with what you saw while exploring:
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div><div className="mb-1 text-[11px] text-dim">While exploring</div>{h.explore ? <SummaryCells s={h.explore} /> : <p className="text-xs text-amber">No explore run on record.</p>}</div>
+            <div><div className="mb-1 text-[11px] text-dim">On the locked period</div>
+              <SummaryCells s={{ n: st.n, net: st.net, net_pct: st.net_pct, expectancy: st.expectancy, win_rate: st.win_rate, profit_factor: st.profit_factor, max_drawdown_pct: st.max_drawdown_pct }} />
+            </div>
+          </div>
+          <p className="mt-3 text-[11px] leading-snug text-dim">A big drop from exploring to confirming means the settings were fitted to noise. The lock is now used up: another look at this period wouldn't be a clean test.</p>
+        </>
+      ) : (
+        <p className="mt-2 text-xs leading-relaxed text-dim">The most recent part of your data is locked away. Keep trying styles and settings here; when you've settled on one, run <b className="text-paper">Confirm</b> once.</p>
+      )}
+      {h.warnings.map((w, i) => <p key={i} className="mt-2 text-xs text-amber">! {w}</p>)}
+    </div>
+  );
+}
+
+function Results({ job, styles }: { job: BacktestJob; styles: Record<string, EntryStyleInfo> }) {
   const r = job.result;
   if (!r) return null;
   const st = r.summaries.strategy;
@@ -105,8 +147,16 @@ function Results({ job }: { job: BacktestJob }) {
   const sym = { good: "✓", warn: "!", bad: "✕", info: "i" } as const;
   const order = Object.keys(r.summaries);
 
+  const cfg = job.config;
   return (
     <div className="space-y-5">
+      <HoldoutBanner job={job} />
+      {cfg?.entry_style && (
+        <p className="font-mono text-[11px] text-dim">
+          Tested: <span className="text-paper">{styles[cfg.entry_style]?.label ?? cfg.entry_style}</span> · min score {cfg.min_signal_score} ·{" "}
+          {cfg.exit_mode === "atr" ? `exits ${cfg.tp_atr_mult}x / ${cfg.sl_atr_mult}x ATR` : `exits ${cfg.take_profit_pips} / ${cfg.stop_loss_pips} pips`} · up to {cfg.max_concurrent_positions} open
+        </p>
+      )}
       <div className={`rounded-md border p-4 ${banner}`}>
         <div className="font-mono text-sm font-medium">{label}</div>
         <ul className="mt-3 space-y-1.5">
@@ -194,6 +244,53 @@ function Results({ job }: { job: BacktestJob }) {
   );
 }
 
+// ---------------------------------------------------------------- locked test period
+function HoldoutPanel({ state, onReset }: { state: HoldoutState | null; onReset: () => void }) {
+  if (!state) return null;
+  const used = state.confirmed;
+  const when = (t: number) => new Date(t * 1000).toLocaleString();
+  return (
+    <Panel title="Locked test period" eyebrow="Keeps you honest">
+      {!state.locked ? (
+        <p className="text-xs leading-relaxed text-dim">
+          Nothing is locked yet. Your first <b className="text-paper">Explore</b> run locks away the most recent part of the data (30% by default), so you can try styles and
+          settings without ever seeing it. A <b className="text-paper">Confirm</b> run then tests your final choice on it, <b className="text-paper">once</b>.
+          Without this, every tweak quietly fits the settings to the data you've already seen.
+        </p>
+      ) : (
+        <div className="space-y-3 text-xs">
+          <p className="leading-relaxed text-dim">
+            Data from <b className="font-mono text-paper">{state.split_iso}</b> onward ({Math.round((state.fraction ?? 0) * 100)}% of the period) is hidden from Explore runs. Lock #{state.lock_id}, created {state.created_at ? when(state.created_at) : ""}.
+          </p>
+          {state.last_explore && (
+            <div><div className="mb-1 text-[11px] text-dim">Last Explore run · {state.last_explore.overall.replace("_", " ")}</div><SummaryCells s={state.last_explore.summary} /></div>
+          )}
+          {used ? (
+            <div className="rounded-sm border border-signal/30 bg-signal/5 p-3">
+              <div className="mb-1 font-mono text-[10px] tracking-widest text-signal uppercase">Used {when(used.at)} · {used.overall.replace("_", " ")}</div>
+              <SummaryCells s={used.summary} />
+              <p className="mt-2 text-[11px] leading-snug text-dim">That is the number to trust. The lock is spent: to test again you must reset it, and this period then counts as seen.</p>
+            </div>
+          ) : (
+            <p className="rounded-sm border border-hairline bg-ink/40 px-3 py-2 text-dim">Not used yet. Choose <b className="text-paper">Confirm</b> as the test period when you have settled on your settings.</p>
+          )}
+          <button
+            onClick={() => { if (window.confirm("Reset the lock? The locked period will count as SEEN, so a new lock can never be as clean as this one was.")) onReset(); }}
+            className="rounded-sm border border-hairline px-3 py-1 font-mono text-[11px] text-dim hover:border-danger/50 hover:text-danger"
+          >
+            Reset lock
+          </button>
+        </div>
+      )}
+      {state.history.length > 0 && (
+        <p className="mt-3 border-t border-hairline pt-3 text-[11px] leading-snug text-dim">
+          Earlier locks: {state.history.length} ({state.history.map((h) => `#${h.lock_id}${h.was_confirmed ? " used" : ""}`).join(", ")}). Their periods count as seen.
+        </p>
+      )}
+    </Panel>
+  );
+}
+
 // ---------------------------------------------------------------- main
 export function ScalperBacktest() {
   const [source, setSource] = useState<"mt5" | "csv" | "synthetic">("mt5");
@@ -205,6 +302,11 @@ export function ScalperBacktest() {
   const [commission, setCommission] = useState("0");
   const [balance, setBalance] = useState("");
   const [controls, setControls] = useState(true);
+  const [holdoutMode, setHoldoutMode] = useState<"explore" | "confirm" | "off">("explore");
+  const [lockShare, setLockShare] = useState("30");
+  const [pattern, setPattern] = useState<"random" | "trending" | "mean_reverting">("random");
+  const [holdout, setHoldout] = useState<HoldoutState | null>(null);
+  const [styles, setStyles] = useState<Record<string, EntryStyleInfo>>({});
   const [job, setJob] = useState<BacktestJob | null>(null);
   const [history, setHistory] = useState<BacktestListItem[]>([]);
   const [err, setErr] = useState<string | null>(null);
@@ -212,7 +314,8 @@ export function ScalperBacktest() {
   const timer = useRef<number | null>(null);
 
   const loadHistory = useCallback(() => api.scalper.backtest.list().then(setHistory).catch(() => undefined), []);
-  useEffect(() => { loadHistory(); }, [loadHistory]);
+  const loadHoldout = useCallback(() => api.scalper.backtest.holdout().then(setHoldout).catch(() => undefined), []);
+  useEffect(() => { loadHistory(); loadHoldout(); api.scalper.config().then((c) => setStyles(c.entry_styles)).catch(() => undefined); }, [loadHistory, loadHoldout]);
 
   const stopPolling = () => { if (timer.current) window.clearInterval(timer.current); timer.current = null; };
   const poll = useCallback((id: string) => {
@@ -221,21 +324,25 @@ export function ScalperBacktest() {
       try {
         const j = await api.scalper.backtest.status(id);
         setJob(j);
-        if (j.state !== "running") { stopPolling(); loadHistory(); }
+        if (j.state !== "running") { stopPolling(); loadHistory(); loadHoldout(); }
       } catch (e) { setErr(describeApiError(e)); stopPolling(); }
     };
     tick();
     timer.current = window.setInterval(tick, 1500);
-  }, [loadHistory]);
+  }, [loadHistory, loadHoldout]);
   useEffect(() => stopPolling, []);
 
   const run = async () => {
+    if (holdoutMode === "confirm" && !window.confirm("This uses the locked test period. You only get ONE clean look at it, so only continue if you have finished choosing your settings.")) return;
     setErr(null); setBusy(true); setJob(null);
     try {
       const body: Record<string, unknown> = {
         source, days: Number(days), slippage_pips: Number(slippage), commission_per_lot: Number(commission),
         variants: controls ? ["strategy", "baseline", "shuffle", "stress"] : ["strategy"],
       };
+      body.holdout = holdoutMode;
+      if (holdoutMode === "explore" && !holdout?.locked) body.holdout_fraction = Number(lockShare) / 100;
+      if (source === "synthetic") { body.synthetic_trending = pattern === "trending"; body.synthetic_mean_reverting = pattern === "mean_reverting"; }
       if (source === "csv") { body.csv_dir = csvDir; body.csv_utc_offset_hours = Number(utcOffset); }
       if (spread.trim() !== "") body.spread_pips = Number(spread);
       if (balance.trim() !== "") body.start_balance = Number(balance);
@@ -288,6 +395,27 @@ export function ScalperBacktest() {
           <Field label="Starting balance" hint="Blank = your MT5 account's balance, in the account's own units (cent accounts: cents).">
             <input className={inputCls} type="number" min={1} value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="auto" />
           </Field>
+          <Field label="Test period" hint={holdoutMode === "explore" ? "Hides the most recent part of the data so you can't fit your settings to it. Use this while experimenting." : holdoutMode === "confirm" ? "Runs your final settings on the hidden part. One use only." : "Uses all the data. Convenient, but every tweak then fits the settings to what you've seen."}>
+            <select className={inputCls} value={holdoutMode} onChange={(e) => setHoldoutMode(e.target.value as typeof holdoutMode)}>
+              <option value="explore">Explore (latest part locked away)</option>
+              <option value="confirm" disabled={!holdout?.locked || !!holdout?.confirmed}>Confirm on the locked part (once)</option>
+              <option value="off">Use all data (no lock)</option>
+            </select>
+          </Field>
+          {holdoutMode === "explore" && !holdout?.locked && (
+            <Field label="Share to lock (%)" hint="Set when the lock is first created.">
+              <input className={inputCls} type="number" min={10} max={50} value={lockShare} onChange={(e) => setLockShare(e.target.value)} />
+            </Field>
+          )}
+          {source === "synthetic" && (
+            <Field label="Synthetic pattern" hint="Random has no pattern at all. Trending and mean-reverting plant one, to check a style finds it.">
+              <select className={inputCls} value={pattern} onChange={(e) => setPattern(e.target.value as typeof pattern)}>
+                <option value="random">Random (no pattern)</option>
+                <option value="trending">Trending</option>
+                <option value="mean_reverting">Mean-reverting</option>
+              </select>
+            </Field>
+          )}
           <label className="flex items-end gap-2 pb-2 text-xs text-paper">
             <input type="checkbox" checked={controls} onChange={(e) => setControls(e.target.checked)} />
             Run the 3 controls (recommended)
@@ -308,6 +436,11 @@ export function ScalperBacktest() {
         {err && <p className="mt-3 rounded-sm border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{err}</p>}
       </Panel>
 
+      <HoldoutPanel
+        state={holdout}
+        onReset={() => api.scalper.backtest.resetHoldout().then((s) => { setHoldout(s); if (holdoutMode === "confirm") setHoldoutMode("explore"); }).catch((e) => setErr(describeApiError(e)))}
+      />
+
       {job && job.state !== "done" && (
         <Panel title={job.state === "running" ? "Running…" : `Backtest ${job.state}`} eyebrow="Progress">
           <div className="h-2 overflow-hidden rounded-full bg-hairline">
@@ -322,7 +455,7 @@ export function ScalperBacktest() {
         </Panel>
       )}
 
-      {job?.state === "done" && <Results job={job} />}
+      {job?.state === "done" && <Results job={job} styles={styles} />}
 
       <Panel
         title="Previous backtests"
@@ -338,6 +471,8 @@ export function ScalperBacktest() {
                 <button onClick={() => { setErr(null); poll(h.job_id); }} className="flex w-full flex-wrap items-center gap-x-4 rounded-sm px-2 py-1.5 text-left hover:bg-ink/60">
                   <span className="text-paper">{h.created ? new Date(h.created * 1000).toLocaleString() : h.job_id}</span>
                   <span className="text-dim">{h.source} · {h.days}d</span>
+                  {h.entry_style && <span className="text-dim">{styles[h.entry_style]?.label ?? h.entry_style}</span>}
+                  {h.holdout && h.holdout !== "off" && <span className={h.holdout === "confirm" ? "text-signal" : "text-dim"}>{h.holdout}</span>}
                   <span className={h.overall === "promising" ? "text-signal" : h.overall === "not_viable" ? "text-danger" : "text-amber"}>{h.overall ? h.overall.replace("_", " ") : h.state}</span>
                   {h.net !== null && h.net !== undefined && <span className={tone(h.net)}>{signed(h.net)} · {h.trades} trades</span>}
                 </button>

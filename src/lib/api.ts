@@ -17,6 +17,7 @@ import type {
   RiskCalculation,
   BacktestJob,
   BacktestListItem,
+  HoldoutState,
   ScalperConfigResponse,
   ScalperDiagnostics,
   ScalperStatus,
@@ -227,6 +228,8 @@ export const api = {
       status: (id: string) => request<BacktestJob>(`/api/scalper/backtest/${id}`),
       list: () => request<BacktestListItem[]>("/api/scalper/backtest"),
       cancel: (id: string) => request<BacktestJob>(`/api/scalper/backtest/${id}/cancel`, { method: "POST" }),
+      holdout: () => request<HoldoutState>("/api/scalper/backtest/holdout"),
+      resetHoldout: () => request<HoldoutState>("/api/scalper/backtest/holdout/reset", { method: "POST" }),
     },
   },
 };

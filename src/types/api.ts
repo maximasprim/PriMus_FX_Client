@@ -321,6 +321,7 @@ export interface ChatResponse {
 }
 // ---------------------------------------------------------------- Scalper
 export interface ScalperConfig {
+  entry_style: "momentum" | "breakout" | "spike_fade" | "range_reversal";
   backend: "mt5" | "simulation";
   allow_live_account: boolean;
   instruments: string[];
@@ -359,8 +360,15 @@ export interface ScalperConfig {
   flatten_on_halt: boolean;
 }
 
+export interface EntryStyleInfo {
+  label: string;
+  hint: string;
+  suggested_min_score: number;
+}
+
 export interface ScalperConfigResponse {
   config: ScalperConfig;
+  entry_styles: Record<string, EntryStyleInfo>;
   allowed_instruments: string[];
   running: boolean;
 }
@@ -481,7 +489,37 @@ export interface BtSummary extends BtStats {
   errors: string[];
 }
 
+export interface HoldoutSummary {
+  n: number | null;
+  net: number | null;
+  net_pct: number | null;
+  expectancy: number | null;
+  win_rate: number | null;
+  profit_factor: number | null;
+  max_drawdown_pct: number | null;
+}
+
+export interface HoldoutRecord {
+  job_id: string;
+  at: number;
+  summary: HoldoutSummary;
+  overall: string;
+}
+
+export interface HoldoutState {
+  locked: boolean;
+  lock_id?: number;
+  split_ts?: number;
+  split_iso?: string;
+  fraction?: number;
+  created_at?: number;
+  last_explore?: HoldoutRecord | null;
+  confirmed?: HoldoutRecord | null;
+  history: { lock_id: number; split_iso: string; was_confirmed: boolean; confirmed_net_pct: number | null }[];
+}
+
 export interface BacktestResult {
+  holdout?: { mode: "explore" | "confirm"; split_iso: string; warnings: string[]; explore?: HoldoutSummary | null };
   summaries: Record<string, BtSummary>;
   verdict: { overall: "promising" | "inconclusive" | "not_viable"; points: { level: "good" | "warn" | "bad" | "info"; text: string }[] };
   notes: string[];
@@ -496,6 +534,8 @@ export interface BacktestJob {
   progress: number;
   result: BacktestResult | null;
   error: string | null;
+  config?: { entry_style?: string; min_signal_score?: number; exit_mode?: string; tp_atr_mult?: number; sl_atr_mult?: number;
+             take_profit_pips?: number; stop_loss_pips?: number; max_concurrent_positions?: number };
 }
 
 export interface BacktestListItem {
@@ -507,4 +547,6 @@ export interface BacktestListItem {
   overall: string | null;
   net: number | null;
   trades: number | null;
+  holdout?: string | null;
+  entry_style?: string | null;
 }
