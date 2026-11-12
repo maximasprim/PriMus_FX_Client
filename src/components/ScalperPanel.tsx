@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Play, RefreshCw, ShieldAlert, Square } from "lucide-react";
 import { Panel, ErrorState } from "./Panel";
 import { ScalperBacktest } from "./ScalperBacktest";
+import { ScalperHistory } from "./ScalperHistory";
+import { ScalperPresets } from "./ScalperPresets";
+import { ScalperSchedule } from "./ScalperSchedule";
 import { api, describeApiError } from "../lib/api";
 import { useApiData } from "../hooks/useApiData";
 import type { ScalperConfig, ScalperDiagnostics, ScalperStatus } from "../types/api";
@@ -211,6 +214,21 @@ function ScalperLive() {
             </button>
           </div>
         </div>
+        {status && (
+          <p className="mt-3 font-mono text-[11px] text-dim">
+            Settings in use: <span className="text-paper">{status.preset}</span>
+            {running && status.plan && (
+              <span className="ml-3 text-signal">
+                Session “{status.plan.label || status.plan.source}”
+                {status.plan.ends_at ? ` ends ${new Date(status.plan.ends_at * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}
+                {status.plan.profit_target_money > 0 ? ` · stops at +${status.plan.profit_target_money.toFixed(2)}` : ""}
+              </span>
+            )}
+          </p>
+        )}
+        {status?.session_end_reason && !running && (
+          <p className="mt-3 rounded-sm border border-signal/30 bg-signal/10 px-3 py-2 text-xs text-signal">Session finished: {status.session_end_reason}</p>
+        )}
         {status?.halt_reason && !running && (
           <p className="mt-3 rounded-sm border border-amber/40 bg-amber/10 px-3 py-2 text-xs text-amber">Stopped by a rule: {status.halt_reason}</p>
         )}
@@ -261,17 +279,24 @@ function ScalperLive() {
                 <span className={c.severity === "ok" ? "text-signal" : c.severity === "warning" ? "text-amber" : "text-danger"}>
                   {c.severity === "ok" ? "✓" : c.severity === "warning" ? "!" : "✕"}
                 </span>
-                <span><span className="text-paper">{c.name}</span> <span className="text-dim">— {c.detail}</span></span>
+                <span><span className="text-paper">{c.name}</span> <span className="text-dim">- {c.detail}</span></span>
               </li>
             ))}
           </ul>
         )}
         <p className="mt-3 border-t border-hairline pt-3 text-[11px] leading-snug text-dim">
           <b className="text-paper">Desktop vs mobile MT5:</b> the bot runs against the MT5 <b>desktop</b> terminal (Windows) on the machine
-          where this backend runs — mobile MT5 has no automation interface. Trades the bot opens on your account still show up in the MT5 mobile
+          where this backend runs - mobile MT5 has no automation interface. Trades the bot opens on your account still show up in the MT5 mobile
           app, and you can close them there by hand. You can also watch and control the bot from this dashboard on your phone.
         </p>
       </Panel>
+
+      {/* ------------------------------------------------ presets */}
+      <ScalperPresets
+        hasUnsavedEdits={dirtyKeys.length > 0}
+        running={running}
+        onApplied={(config) => { setDraft(config); setSaved(config); refetchCfg(); }}
+      />
 
       {/* ------------------------------------------------ settings */}
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -298,12 +323,12 @@ function ScalperLive() {
       <Group
         accent
         title="Stop the bot when…"
-        note="These switch the whole bot off (and by default close everything). A loss limit is required — the bot won't run without one."
+        note="These switch the whole bot off (and by default close everything). A loss limit is required - the bot won't run without one."
       >
         <NumberField label={`Max session loss (${cur || "money"})`} value={draft.session_max_loss_money} min={0} step={1} onChange={(v) => set("session_max_loss_money", v)} hint="Stop when realised + open P&L falls to minus this. 0 = use % only." />
         <NumberField label="Max session loss (% of starting equity)" value={draft.session_max_loss_pct} min={0} max={50} step={0.1} onChange={(v) => set("session_max_loss_pct", v)} hint="Whichever of the two loss limits is hit first stops the bot." />
         <NumberField label={`Total profit target (${cur || "money"})`} value={draft.session_profit_target_money} min={0} step={1} onChange={(v) => set("session_profit_target_money", v)} hint="Stop the bot once the session is up this much. 0 = off." />
-        <NumberField label={`Basket take-profit (${cur || "money"})`} value={draft.basket_take_profit_money} min={0} step={1} onChange={(v) => set("basket_take_profit_money", v)} hint="Close ALL open trades when their combined profit reaches this — the bot keeps running. 0 = off." />
+        <NumberField label={`Basket take-profit (${cur || "money"})`} value={draft.basket_take_profit_money} min={0} step={1} onChange={(v) => set("basket_take_profit_money", v)} hint="Close ALL open trades when their combined profit reaches this - the bot keeps running. 0 = off." />
         <NumberField label="Stop after N losses in a row" value={draft.max_consecutive_losses} min={0} max={50} onChange={(v) => set("max_consecutive_losses", v)} hint="0 = off." />
         <Toggle label="Close all trades when a rule stops the bot" checked={draft.flatten_on_halt} onChange={(v) => set("flatten_on_halt", v)} hint="Off = trades stay open with their own stop-loss / take-profit." />
       </Group>
@@ -347,13 +372,13 @@ function ScalperLive() {
         <SelectField label="Sizing mode" value={draft.lot_mode} onChange={(v) => set("lot_mode", v)} options={[{ id: "fixed", label: "Fixed lot" }, { id: "risk_pct", label: "% of equity at risk" }]} />
         {draft.lot_mode === "fixed"
           ? <NumberField label="Lot size" value={draft.fixed_lot} min={0.01} max={5} step={0.01} onChange={(v) => set("fixed_lot", v)} />
-          : <NumberField label="Risk per trade (% of equity)" value={draft.risk_per_trade_pct} min={0.05} max={2} step={0.05} onChange={(v) => set("risk_per_trade_pct", v)} hint="If this works out below the broker's minimum lot, the trade is skipped — never rounded up." />}
+          : <NumberField label="Risk per trade (% of equity)" value={draft.risk_per_trade_pct} min={0.05} max={2} step={0.05} onChange={(v) => set("risk_per_trade_pct", v)} hint="If this works out below the broker's minimum lot, the trade is skipped - never rounded up." />}
         <NumberField label="Max lot per trade" value={draft.max_lot_per_trade} min={0.01} max={10} step={0.01} onChange={(v) => set("max_lot_per_trade", v)} />
         <NumberField label="Max total open risk (% of equity)" value={draft.max_total_risk_pct} min={0.1} max={10} step={0.1} onChange={(v) => set("max_total_risk_pct", v)} hint="Sum of every open trade's stop-loss risk. New trades are blocked above this." />
       </Group>
 
       <Group title="Exits">
-        <SelectField label="Stop-loss / take-profit based on" value={draft.exit_mode} onChange={(v) => set("exit_mode", v)} options={[{ id: "atr", label: "Market volatility (ATR) — adapts to each pair" }, { id: "fixed", label: "Fixed pips" }]} />
+        <SelectField label="Stop-loss / take-profit based on" value={draft.exit_mode} onChange={(v) => set("exit_mode", v)} options={[{ id: "atr", label: "Market volatility (ATR) - adapts to each pair" }, { id: "fixed", label: "Fixed pips" }]} />
         {draft.exit_mode === "atr" ? (
           <>
             <NumberField label="Take-profit (× ATR)" value={draft.tp_atr_mult} min={0.2} max={5} step={0.1} onChange={(v) => set("tp_atr_mult", v)} />
@@ -369,6 +394,13 @@ function ScalperLive() {
         <NumberField label="Close a trade after (seconds)" value={draft.max_hold_seconds} min={0} max={86400} step={10} onChange={(v) => set("max_hold_seconds", v)} hint="Time stop for scalps that go nowhere. 0 = off." />
         <NumberField label="Move stop to break-even after (pips)" value={draft.breakeven_after_pips} min={0} max={500} step={0.5} onChange={(v) => set("breakeven_after_pips", v)} hint="0 = off." />
         <Toggle label="Stagger targets" checked={draft.stagger_targets} onChange={(v) => set("stagger_targets", v)} hint="When opening several trades at once, each aims further than the last." />
+        <div className="sm:col-span-2">
+          <Toggle
+            label="Each trade keeps the exit rules it was opened with"
+            hint="On (recommended): changing settings or switching presets only affects NEW trades - open trades finish under the hold time, trailing stop, break-even and profit target they started with. Off: changes apply to open trades immediately."
+            checked={draft.lock_rules_per_trade} onChange={(v) => set("lock_rules_per_trade", v)}
+          />
+        </div>
         <Toggle label="Trailing stop" checked={draft.trailing_enabled} onChange={(v) => set("trailing_enabled", v)} />
         {draft.trailing_enabled && (
           <>
@@ -427,7 +459,7 @@ function ScalperLive() {
                   <tr key={p.ticket} className="border-t border-hairline/60">
                     <td className="py-2 text-paper">{p.instrument}</td>
                     <td className={p.side === "BUY" ? "text-signal" : "text-danger"}>{p.side}</td>
-                    <td>{p.volume}</td><td>{p.price_open}</td><td>{p.sl || "—"}</td><td>{p.tp || "—"}</td>
+                    <td>{p.volume}</td><td>{p.price_open}</td><td>{p.sl || "-"}</td><td>{p.tp || "-"}</td>
                     <td>{p.age_seconds}s</td>
                     <td className={`text-right ${tone(p.profit)}`}>{money(p.profit)}</td>
                   </tr>
@@ -486,11 +518,11 @@ function ScalperLive() {
 
 // ------------------------------------------------------------------ Live | Backtest switcher
 export function ScalperPanel() {
-  const [view, setView] = useState<"live" | "backtest">("live");
+  const [view, setView] = useState<"live" | "history" | "schedule" | "backtest">("live");
   return (
     <div className="space-y-5">
       <div className="flex gap-1 border-b border-hairline">
-        {([["live", "Live & settings"], ["backtest", "Backtest"]] as const).map(([id, label]) => (
+        {([["live", "Live & settings"], ["history", "History"], ["schedule", "Schedule"], ["backtest", "Backtest"]] as const).map(([id, label]) => (
           <button
             key={id}
             onClick={() => setView(id)}
@@ -500,7 +532,7 @@ export function ScalperPanel() {
           </button>
         ))}
       </div>
-      {view === "live" ? <ScalperLive /> : <ScalperBacktest />}
+      {view === "live" ? <ScalperLive /> : view === "history" ? <ScalperHistory /> : view === "schedule" ? <ScalperSchedule /> : <ScalperBacktest />}
     </div>
   );
 }

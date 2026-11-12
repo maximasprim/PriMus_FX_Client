@@ -321,9 +321,10 @@ export interface ChatResponse {
 }
 // ---------------------------------------------------------------- Scalper
 export interface ScalperConfig {
-  entry_style: "momentum" | "breakout" | "spike_fade" | "range_reversal";
+  entry_style: "momentum" | "breakout" | "spike_fade" | "range_reversal" | "hybrid";
   backend: "mt5" | "simulation";
   allow_live_account: boolean;
+  lock_rules_per_trade: boolean;
   instruments: string[];
   loop_interval_ms: number;
   max_concurrent_positions: number;
@@ -406,6 +407,9 @@ export interface ScalperStatus {
   halt_reason: string | null;
   last_error: string | null;
   started_at: number | null;
+  plan: ScalperPlan | null;
+  session_end_reason: string | null;
+  preset: string;
   account: {
     backend: string;
     login: string | null;
@@ -549,4 +553,122 @@ export interface BacktestListItem {
   trades: number | null;
   holdout?: string | null;
   entry_style?: string | null;
+}
+
+// ---------------------------------------------------------------- Scalper: plan, history, presets, schedule
+export interface ScalperPlan {
+  label: string;
+  source: "manual" | "schedule";
+  ends_at: number | null;
+  profit_target_money: number;
+  close_positions_at_end: boolean;
+}
+
+export interface TradeRecord {
+  ticket: string;
+  instrument: string;
+  side: "BUY" | "SELL";
+  volume: number;
+  entry: number;
+  sl: number | null;
+  tp: number | null;
+  spread_pips: number | null;
+  score: number | null;
+  reasons: string[] | null;
+  entry_style: string | null;
+  preset: string | null;
+  currency: string | null;
+  planned_tp_pips: number | null;
+  planned_sl_pips: number | null;
+  plan: string | null;
+  opened_at: number;
+  status: "open" | "closed" | "unknown";
+  closed_at: number | null;
+  exit: number | null;
+  pnl: number | null;
+  pnl_estimated?: boolean;
+  pips: number | null;
+  duration_seconds: number | null;
+  result: "win" | "loss" | "flat" | null;
+  exit_reason: string | null;
+  exit_reason_label: string | null;
+  summary: string;
+}
+
+export interface HistoryGroup { trades: number; net: number; win_rate: number | null }
+
+export interface HistorySummary {
+  closed: number;
+  open: number;
+  wins: number;
+  losses: number;
+  flat: number;
+  win_rate: number | null;
+  net: number;
+  gross_win: number;
+  gross_loss: number;
+  profit_factor: number | null;
+  avg_win: number | null;
+  avg_loss: number | null;
+  expectancy: number | null;
+  best: number | null;
+  worst: number | null;
+  avg_duration_seconds: number | null;
+  longest_losing_streak: number;
+  by_day: (HistoryGroup & { day: string })[];
+  by_instrument: (HistoryGroup & { instrument: string })[];
+  by_reason: (HistoryGroup & { reason: string; label: string })[];
+  by_preset: (HistoryGroup & { preset: string })[];
+}
+
+export interface HistoryResponse {
+  total: number;
+  trades: TradeRecord[];
+  summary: HistorySummary;
+  filters: { instruments: string[]; presets: string[]; reasons: Record<string, string> };
+}
+
+export interface PresetInfo {
+  id: string;
+  name: string;
+  description: string;
+  builtin: boolean;
+  values: Partial<ScalperConfig>;
+}
+
+export interface ActivePreset {
+  id: string;
+  name: string;
+  modified: boolean;
+  changed_keys: string[];
+  applied_at: number | null;
+}
+
+export interface PresetsResponse { presets: PresetInfo[]; active: ActivePreset | null; keys: string[] }
+
+export interface ScheduleSlot {
+  id: string;
+  name: string;
+  enabled: boolean;
+  time: string;
+  days: number[];
+  duration_minutes: number;
+  profit_target_money: number;
+  close_positions_at_end: boolean;
+  require_market_open: boolean;
+  preset_id: string | null;
+  last_run_date: string | null;
+  last_result: string | null;
+  next_run?: { at: string; in_seconds: number; ts: number } | null;
+}
+
+export interface ScheduleView {
+  enabled: boolean;
+  timezone: string;
+  slots: ScheduleSlot[];
+  now_local: string;
+  market_open: boolean | null;
+  market_reason: string | null;
+  grace_minutes: number;
+  plan: ScalperPlan | null;
 }

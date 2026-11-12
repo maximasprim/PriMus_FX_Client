@@ -18,6 +18,10 @@ import type {
   BacktestJob,
   BacktestListItem,
   HoldoutState,
+  HistoryResponse,
+  PresetInfo,
+  PresetsResponse,
+  ScheduleView,
   ScalperConfigResponse,
   ScalperDiagnostics,
   ScalperStatus,
@@ -55,6 +59,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
+}
+
+export interface HistoryQuery {
+  limit?: number; offset?: number; since?: number; until?: number; instrument?: string;
+  result?: string; preset?: string; reason?: string; status?: string;
+}
+
+function historyQs(p: HistoryQuery): string {
+  const qs = new URLSearchParams();
+  Object.entries(p).forEach(([k, v]) => { if (v !== undefined && v !== "" && v !== null) qs.set(k, String(v)); });
+  qs.set("tz", Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+  return `?${qs.toString()}`;
 }
 
 export const api = {
@@ -222,6 +238,38 @@ export const api = {
       request<ScalperStatus>("/api/scalper/stop", { method: "POST", body: JSON.stringify({ close_positions: closePositions }) }),
     flatten: () => request<ScalperStatus & { closed: number }>("/api/scalper/flatten", { method: "POST" }),
     diagnostics: () => request<ScalperDiagnostics>("/api/scalper/diagnostics"),
+    history: (p: HistoryQuery = {}) => request<HistoryResponse>(`/api/scalper/history${historyQs(p)}`),
+    downloadHistoryCsv: async (p: HistoryQuery = {}) => {
+      const res = await fetch(`${getApiBaseUrl()}/api/scalper/history/export${historyQs({ ...p, limit: undefined, offset: undefined })}`, {
+        headers: { "X-API-Key": getApiKey() },
+      });
+      if (!res.ok) throw new ApiError(res.status, await res.text().catch(() => "Download failed"));
+      const url = URL.createObjectURL(await res.blob());
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `scalper_trades_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+    presets: {
+      list: () => request<PresetsResponse>("/api/scalper/presets"),
+      create: (name: string, description = "") =>
+        request<{ preset: PresetInfo }>("/api/scalper/presets", { method: "POST", body: JSON.stringify({ name, description }) }),
+      rename: (id: string, name: string, description?: string) =>
+        request<{ preset: PresetInfo }>(`/api/scalper/presets/${id}`, { method: "PUT", body: JSON.stringify({ name, description }) }),
+      updateFromCurrent: (id: string) =>
+        request<{ preset: PresetInfo }>(`/api/scalper/presets/${id}`, { method: "PUT", body: JSON.stringify({ use_current_settings: true }) }),
+      remove: (id: string) => request<{ deleted: string }>(`/api/scalper/presets/${id}`, { method: "DELETE" }),
+      apply: (id: string) =>
+        request<{ config: ScalperConfigResponse["config"]; changed: { key: string; from: unknown; to: unknown }[]; applied_live: boolean }>(
+          `/api/scalper/presets/${id}/apply`, { method: "POST" }),
+    },
+    schedule: {
+      get: () => request<ScheduleView>("/api/scalper/schedule"),
+      save: (body: Record<string, unknown>) => request<ScheduleView>("/api/scalper/schedule", { method: "PUT", body: JSON.stringify(body) }),
+    },
+    startTimed: (body: { duration_minutes: number; profit_target_money: number; close_positions_at_end: boolean }) =>
+      request<ScalperStatus>("/api/scalper/start-timed", { method: "POST", body: JSON.stringify(body) }),
     backtest: {
       start: (body: Record<string, unknown>) =>
         request<{ job_id: string }>("/api/scalper/backtest", { method: "POST", body: JSON.stringify(body) }),

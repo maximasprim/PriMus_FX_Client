@@ -17,8 +17,8 @@ const VARIANT_COLOR: Record<string, string> = {
   stress: "#ff5c5c",
 };
 
-const fmt = (n: number | null | undefined, d = 2) => (n === null || n === undefined ? "—" : n.toFixed(d));
-const signed = (n: number | null | undefined, d = 2) => (n === null || n === undefined ? "—" : `${n >= 0 ? "+" : ""}${n.toFixed(d)}`);
+const fmt = (n: number | null | undefined, d = 2) => (n === null || n === undefined ? "-" : n.toFixed(d));
+const signed = (n: number | null | undefined, d = 2) => (n === null || n === undefined ? "-" : `${n >= 0 ? "+" : ""}${n.toFixed(d)}`);
 const tone = (n: number | null | undefined) => (n === null || n === undefined || n === 0 ? "text-paper" : n > 0 ? "text-signal" : "text-danger");
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -94,7 +94,7 @@ function GroupTable({ title, rows, order }: { title: string; rows: Record<string
 function SummaryCells({ s }: { s: HoldoutSummary }) {
   return (
     <div className="grid grid-cols-2 gap-2 font-mono text-xs sm:grid-cols-4">
-      {([["Trades", s.n === null ? "—" : String(s.n)], ["Net", s.net_pct === null ? "—" : `${signed(s.net_pct)}%`],
+      {([["Trades", s.n === null ? "-" : String(s.n)], ["Net", s.net_pct === null ? "-" : `${signed(s.net_pct)}%`],
          ["Avg / trade", signed(s.expectancy, 3)], ["Win %", fmt(s.win_rate, 1)]] as const).map(([k, v]) => (
         <div key={k} className="rounded-sm border border-hairline bg-ink/40 px-2 py-1.5"><div className="text-[10px] text-dim">{k}</div><div className="text-paper">{v}</div></div>
       ))}
@@ -110,7 +110,7 @@ function HoldoutBanner({ job }: { job: BacktestJob }) {
   return (
     <div className={`rounded-md border p-4 ${confirm ? "border-signal/40 bg-signal/5" : "border-hairline bg-panel"}`}>
       <div className="font-mono text-[10px] tracking-widest text-dim uppercase">
-        {confirm ? "Confirmation run — the locked period, used once" : `Explore run — data before ${h.split_iso} only`}
+        {confirm ? "Confirmation run - the locked period, used once" : `Explore run - data before ${h.split_iso} only`}
       </div>
       {confirm ? (
         <>
@@ -142,7 +142,7 @@ function Results({ job, styles }: { job: BacktestJob; styles: Record<string, Ent
     v.overall === "promising" ? "border-signal/40 bg-signal/10 text-signal"
     : v.overall === "not_viable" ? "border-danger/40 bg-danger/10 text-danger"
     : "border-amber/40 bg-amber/10 text-amber";
-  const label = v.overall === "promising" ? "PROMISING — worth a demo-account trial" : v.overall === "not_viable" ? "NOT VIABLE with these settings" : "INCONCLUSIVE";
+  const label = v.overall === "promising" ? "PROMISING - worth a demo-account trial" : v.overall === "not_viable" ? "NOT VIABLE with these settings" : "INCONCLUSIVE";
   const mark = { good: "text-signal", warn: "text-amber", bad: "text-danger", info: "text-dim" } as const;
   const sym = { good: "✓", warn: "!", bad: "✕", info: "i" } as const;
   const order = Object.keys(r.summaries);
@@ -222,9 +222,9 @@ function Results({ job, styles }: { job: BacktestJob; styles: Record<string, Ent
           {[
             ["First 60% of trades", `${signed(st.in_sample.net)} (${st.in_sample.n})`],
             ["Last 40% of trades", `${signed(st.out_of_sample.net)} (${st.out_of_sample.n})`],
-            ["Profitable days", st.profitable_days_pct === null ? "—" : `${fmt(st.profitable_days_pct, 0)}%`],
+            ["Profitable days", st.profitable_days_pct === null ? "-" : `${fmt(st.profitable_days_pct, 0)}%`],
             ["Longest losing streak", String(st.longest_losing_streak)],
-            ["Average trade length", st.avg_hold_seconds === null ? "—" : `${st.avg_hold_seconds}s`],
+            ["Average trade length", st.avg_hold_seconds === null ? "-" : `${st.avg_hold_seconds}s`],
             ["Trades per day", fmt(st.trades_per_day, 1)],
             ["Best / worst trade", `${signed(st.best_trade)} / ${signed(st.worst_trade)}`],
             ["Days a rule stopped the bot", String(st.days_halted)],
@@ -431,7 +431,7 @@ export function ScalperBacktest() {
               <Square size={14} /> Cancel
             </button>
           )}
-          {source === "synthetic" && <span className="text-xs text-amber">Synthetic data — machinery test only.</span>}
+          {source === "synthetic" && <span className="text-xs text-amber">Synthetic data - machinery test only.</span>}
         </div>
         {err && <p className="mt-3 rounded-sm border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{err}</p>}
       </Panel>
